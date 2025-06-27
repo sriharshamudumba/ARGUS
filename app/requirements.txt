@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+cohere
+langchain
+faiss-cpu
+python-dotenv
+tiktoken
+PyPDF2

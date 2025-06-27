@@ -147,6 +147,4 @@ COHERE_API_KEY=your-api-key-here
 
 ---
 
-## 📄 License
 
-MIT License

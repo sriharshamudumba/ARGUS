@@ -1,150 +1,186 @@
 # ARGUS: AI Research Guidance and Understanding System
 
-**ARGUS** is a cloud-deployable research assistant that uses Retrieval-Augmented Generation (RAG) and document similarity to answer technical questions and recommend related papers. It supports PDF ingestion and arXiv metadata parsing.
+**ARGUS** is a cloud-deployable research assistant designed to help researchers, students, and engineers explore and understand scientific papers.  
+It integrates **Retrieval-Augmented Generation (RAG)** and **semantic similarity search** to answer natural language questions about research documents and recommend related work.  
+The system supports both **PDF ingestion** and **arXiv metadata parsing**, enabling flexible and large-scale research discovery.
 
 ---
 
-## 🔍 Features
+## Overview
 
-- **RAG Q&A**: Ask natural language questions over research papers (from PDF and arXiv JSON).
-- **Recommendations**: Find similar papers using document embedding + FAISS.
-- **Cohere embeddings**: Uses `embed-english-v3.0` for document vectorization.
-- **Dockerized**: Easy to deploy on any cloud (AWS EC2, etc.).
+ARGUS combines modern language models, document embeddings, and retrieval systems to bridge the gap between human queries and scientific literature.  
+It builds an intelligent interface over research documents, allowing users to query papers in natural language, generate summaries, and explore related publications—all through an efficient, containerized deployment.
 
 ---
 
-## 📁 Project Structure
+## Key Features
+
+### 1. Retrieval-Augmented Generation (RAG) Q&A
+- Ask questions directly over a collection of research papers.  
+- Works with both **PDF files** and **arXiv JSON snapshots**.  
+- Uses two retrieval granularities:
+  - Small chunks (~500 tokens) for factual precision.  
+  - Large chunks (~1500 tokens) for reasoning and summarization.
+
+### 2. Research Paper Recommendations
+- Recommends semantically similar papers based on **document embeddings**.  
+- Uses **FAISS** for efficient vector similarity search.  
+- Allows queries by paper title, abstract, or free text.
+
+### 3. Cohere Embeddings
+- Uses **Cohere’s embed-english-v3.0** model for vectorization.  
+- Embedding generation supports batching with retry logic for reliability.  
+- Vectors are stored in two FAISS indexes for flexible retrieval:
+  - `faiss_small`: factual and short-form QA.  
+  - `faiss_large`: long-form reasoning and recommendation.
+
+### 4. Cloud-Ready Deployment
+- Fully containerized with Docker.  
+- Can be deployed easily to AWS EC2, GCP, or other cloud services.  
+- FastAPI backend provides RESTful endpoints for all major functionalities.
+
+---
+
+## Project Structure
 
 ```
 ARGUS/
 │
-├── Notebooks/                 # Jupyter notebooks for development
+├── Notebooks/                  # Jupyter notebooks for experimentation
 │   ├── step1_RAG_implementation.ipynb
 │   ├── step2_recommendation_system.ipynb
-│   └── utils_ingest.py        # Shared PDF/JSON processing utilities
+│   └── utils_ingest.py         # Shared utilities for PDF/JSON ingestion
 │
-├── Papers/                    # Local PDF papers
-├── archive/                   # arXiv JSON dataset
-├── vectorstore/               # FAISS indexes
-│   ├── faiss_small/           # For factual Q&A (small chunks)
-│   └── faiss_large/           # For reasoning & summaries (large chunks)
+├── Papers/                     # Local PDF storage
+├── archive/                    # arXiv JSON dataset
+├── vectorstore/                # FAISS vector databases
+│   ├── faiss_small/            # Small chunks for factual retrieval
+│   └── faiss_large/            # Large chunks for summaries and recommendations
 │
-├── app/                       # FastAPI application
-│   ├── main.py                # RAG & recommendation endpoints
-│   └── requirements.txt       # API dependencies
+├── app/                        # FastAPI application
+│   ├── main.py                 # API routes for RAG and recommendations
+│   └── requirements.txt        # Dependencies for the backend
 │
-├── Dockerfile                 # For containerized deployment
-└── README.md                  # This file
+├── Dockerfile                  # For containerized deployment
+└── README.md                   # Project documentation
 ```
 
 ---
 
-## 📥 Ingesting Research Documents
+## Document Ingestion
 
-Supports:
-- PDF papers (split by page)
-- arXiv `.json` snapshot (1 line = 1 paper)
+ARGUS supports ingestion of:
+- **PDF papers**, parsed and chunked by page or section.  
+- **arXiv JSON snapshots**, where each line corresponds to a single paper’s metadata.
 
-Uses recursive chunking for:
-- Small chunks (500 tokens) for **factual** retrieval
-- Large chunks (1500 tokens) for **summarization-level** retrieval
-
----
-
-## 🔠 Embedding & Indexing
-
-Embeddings:
-- Model: `embed-english-v3.0` from [Cohere](https://cohere.com/)
-- Batching done with retry logic (batch size ≤ 96)
-
-Vector store:
-- FAISS
-- Two indexes:
-  - `faiss_small` for factual QA
-  - `faiss_large` for summarization/recommendation
+Two levels of recursive chunking are used:
+- **Small chunks (≈500 tokens):** Optimized for factual retrieval and quick lookups.  
+- **Large chunks (≈1500 tokens):** Designed for summarization and reasoning.
 
 ---
 
-## 🧠 RAG Chains
+## Embedding and Indexing
 
-Two RAG chains are created using LangChain:
-- `rag_chain_small`: For fast, accurate questions
-- `rag_chain_large`: For long-form answers, summaries
+### Embeddings
+- Model: `embed-english-v3.0` from **Cohere**.  
+- Handles batching efficiently with retry logic (batch size ≤ 96).  
+
+### Vector Store
+- **FAISS** is used for high-speed similarity search.  
+- Maintains two separate indexes:
+  - `faiss_small` – short factual queries.  
+  - `faiss_large` – contextual and long-form queries.
 
 ---
 
-## 🔗 Recommendation System
+## RAG Chains
 
-Similarity search using FAISS with large embeddings:
+ARGUS creates two independent RAG pipelines using **LangChain**:
+
+- **`rag_chain_small`** – optimized for short, fact-based questions.  
+- **`rag_chain_large`** – optimized for deeper reasoning and summarization.
+
+Each chain retrieves relevant chunks, feeds them into a language model, and produces a contextually grounded answer.
+
+---
+
+## Recommendation System
+
+ARGUS includes a similarity-based recommendation module using FAISS.
+
+Example function:
 
 ```python
 def recommend_related_papers(query_text, top_k=5):
     results = vector_store.similarity_search(query_text, k=top_k)
+    return results
 ```
 
-Input: Paper title or abstract  
-Output: List of top-K similar documents
+**Input:** Title, abstract, or full text of a paper.  
+**Output:** List of top-K semantically similar documents.
+
+This feature enables automated discovery of related research, improving literature exploration and citation mapping.
 
 ---
 
-## 🐳 Docker Setup
+## Docker Deployment
 
-**Build the image**:
-
+### Build the Image
 ```bash
 sudo docker build -t argus-app .
 ```
 
-**Run the container**:
-
+### Run the Container
 ```bash
 sudo docker run -p 8000:8000 argus-app
 ```
 
-App will be accessible at: `http://localhost:8000`
+Once running, the API is accessible at:  
+**http://localhost:8000**
 
 ---
 
-## 🧪 API Endpoints (FastAPI)
+## API Endpoints (FastAPI)
 
-Once deployed, supports:
+| Endpoint | Method | Description |
+|-----------|--------|-------------|
+| `/rag/qa` | POST | Ask a natural language question over stored papers |
+| `/recommend` | POST | Retrieve a list of related papers |
 
-- `POST /rag/qa` → Ask a question over documents  
-- `POST /recommend` → Get similar papers to a query
-
-Example request:
-
+### Example Request
 ```json
 {
-  "query": "What are the core contributions of ISAAC?"
+  "query": "What are the main contributions of the ISAAC architecture?"
 }
 ```
 
+### Example Response
+- Short factual explanation or a paragraph-level summary drawn from the most relevant documents.
+
 ---
 
-## 🔐 API Keys
+## API Keys
 
-Store your keys in a `.env` file:
-
+Create a `.env` file in your working directory and add:
 ```
 COHERE_API_KEY=your-api-key-here
 ```
 
 ---
 
-## 📌 Future Work
-
-- Support for real-time PDF upload
-- LLM switching (OpenAI, Mistral, Claude)
-- UI frontend with Streamlit or React
-
----
-
-## 👨‍💻 Maintainer
-
-- Sri Harsha  
-- MS Computer Engineering, Iowa State University
+## Future Enhancements
+- Real-time PDF uploads through the API or UI  
+- Support for multiple embedding and LLM providers (OpenAI, Mistral, Claude)  
+- Streamlit or React-based web interface for interactive exploration  
 
 ---
 
+## Maintainer
 
+**Sri Harsha Mudumba**  
+M.S. Computer Engineering, Iowa State University  
+Focus: AI Inference Optimization, RAG Systems, and Cloud-based Research Tools  
+
+---
+
+**ARGUS — Bridging human curiosity and machine understanding for research discovery.**

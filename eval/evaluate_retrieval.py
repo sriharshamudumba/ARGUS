@@ -21,22 +21,7 @@ MLflow UI:
     mlflow ui --port 5000
     # open http://localhost:5000 -> Experiments -> argus-retrieval
 
-Interview talking points:
-    Q: What is NDCG and why use it for retrieval eval?
-    A: Normalized Discounted Cumulative Gain measures ranking quality.
-       It gives higher weight to relevant documents appearing earlier
-       in the result list. NDCG@5 = 1.0 means the top-5 results are
-       perfectly ranked; 0.0 means all relevant docs are at the bottom.
-       Precision@K just counts how many of the top-K are relevant.
-       We use both because NDCG is position-sensitive and P@K is
-       interpretable to non-ML stakeholders.
 
-    Q: What's your evaluation set?
-    A: 50 hand-labeled (query, relevant_paper_ids) pairs sampled from
-       arXiv CS papers, covering ML, systems, and NLP subfields.
-
-    Q: What did you find from the MLflow comparisons?
-    A: embed-english-v3.0 + Cohere reranking + small chunks gave the
        best NDCG@5 (0.74). Large chunks alone gave 0.61. The comparison
        was done without changing any serving code -- just swapping config
        in the experiment run.

@@ -9,34 +9,7 @@ The existing pipeline does:
 This adds a second pass:
     ... -> FAISS top-K docs -> Cohere rerank -> re-sorted top-K docs
 
-Why reranking?
-    FAISS uses embedding cosine similarity (bi-encoder): the query and
-    document are encoded independently, so their interaction is limited
-    to the dot product of two fixed vectors. This is fast but imprecise.
 
-    Reranking uses a cross-encoder: query and document are concatenated
-    and scored jointly, capturing fine-grained term interactions. Much
-    more accurate, but too slow to run over the full corpus -- so we
-    use FAISS to get the top-K candidates first, then rerank only those.
-
-    Cohere's rerank-english-v3.0 is a hosted cross-encoder. It takes
-    (query, [doc1, doc2, ...]) and returns relevance scores. We re-sort
-    FAISS results by these scores.
-
-Interview talking points:
-    Q: Why not just use a better embedding model instead of reranking?
-    A: Better embeddings improve recall (finding the right docs in top-K)
-       but not precision (ranking them correctly within top-K). Reranking
-       directly optimizes the ranking within the retrieved set.
-
-    Q: What's the latency cost of reranking?
-    A: Cohere rerank API: ~50-80ms for top-20 candidates. FAISS retrieval:
-       ~5-10ms. Total: ~60-90ms, still under the 200ms SLA claimed on the
-       resume. We rerank top-20 from FAISS, then return top-5 to the user.
-
-    Q: How does NDCG change with reranking?
-    A: On our arXiv eval set, FAISS-only NDCG@5 = 0.61. With Cohere
-       reranking, NDCG@5 = 0.74. The delta is tracked per MLflow run.
 """
 
 from __future__ import annotations

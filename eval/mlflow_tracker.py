@@ -20,23 +20,7 @@ Usage:
     # Show leaderboard:
     python eval/mlflow_tracker.py --mode leaderboard
 
-Interview talking points:
-    Q: What configs did you compare in MLflow?
-    A: Four combinations: {small, large} chunks x {FAISS-only, +Cohere rerank}.
-       Best: small chunks + reranking (NDCG@5=0.74, p95=185ms).
-       Worst: large chunks, no rerank (NDCG@5=0.58, p95=210ms).
 
-    Q: Why track without redeploying?
-    A: The serving stack (FastAPI + Docker) is config-driven. Embedding model
-       and chunk size are environment variables, not hardcoded. Switching models
-       for an eval run means changing two env vars and running the eval script --
-       the running container doesn't change. MLflow records which config produced
-       which metrics so we can compare apples-to-apples.
-
-    Q: How many runs do you have in MLflow?
-    A: 12 runs: 4 config combos x 3 repeat runs for variance measurement.
-       Standard deviation of NDCG@5 across repeats was < 0.01 for all configs,
-       confirming the eval set was large enough to be stable.
 """
 
 import argparse
